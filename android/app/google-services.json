@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "348753748050",
+    "project_id": "hubbles-48a01",
+    "storage_bucket": "hubbles-48a01.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:348753748050:android:3f9266792420a7a8b57f8b",
+        "android_client_info": {
+          "package_name": "com.example.hubbles"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMn9c8ryrVhAMEm6vPLDmxbgRW4wdxirI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
