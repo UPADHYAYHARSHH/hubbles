@@ -1,6 +1,14 @@
+import 'dart:developer';
+
+import 'dart:io';
+
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_holo_date_picker/flutter_holo_date_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'bottom_bar.dart';
 
@@ -24,20 +32,88 @@ class _RegistrationState extends State<Registration> {
 
   String? name;
   DateTime selectedDate = DateTime.now();
-  late final String? gender;
-  late final String? location;
+  String? gender = '';
+  String? location = '';
+  String _locationMessage = '';
+  File? _image;
 
   @override
   void initState() {
     super.initState();
     _controller.addListener(_updateIndex);
     name = widget.name;
+    _getLocationPermission();
   }
 
   void _updateIndex() {
     setState(() {
       _currentIndex = _controller.page!.round();
     });
+  }
+
+  Future<void> _getImage() async {
+    // Check and request permission
+    PermissionStatus permissionStatus = await Permission.photos.request();
+    if (permissionStatus.isGranted) {
+      final pickedImage =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      setState(() {
+        if (pickedImage != null) {
+          _image = File(pickedImage.path);
+        } else {
+          print('No image selected.');
+        }
+      });
+    } else {
+      print('Permission denied.');
+    }
+  }
+
+  _getLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permissions are denied, handle accordingly.
+        setState(() {
+          _locationMessage = 'Location permissions are denied.';
+        });
+        return;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are permanently denied, request open settings.
+      setState(() {
+        _locationMessage =
+            'Location permissions are permanently denied, we cannot request permissions.';
+      });
+      return;
+    }
+
+    _getCurrentLocation();
+  }
+
+  _getCurrentLocation() async {
+    try {
+      final Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+
+      Placemark place = placemarks[0];
+
+      setState(() {
+        _locationMessage =
+            '${place.locality},${place.administrativeArea},${place.country}';
+        location = _locationMessage;
+        log('_locationMessage-->$_locationMessage');
+      });
+    } catch (e) {
+      setState(() {
+        _locationMessage = 'Could not get location: $e';
+      });
+    }
   }
 
   @override
@@ -296,23 +372,32 @@ class _RegistrationState extends State<Registration> {
                           const SizedBox(
                             height: 20,
                           ),
-                          Container(
-                            width: double.maxFinite,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(
-                                10,
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                gender = 'Male';
+                              });
+                            },
+                            child: Container(
+                              width: double.maxFinite,
+                              decoration: BoxDecoration(
+                                color: gender == 'Male'
+                                    ? Colors.green
+                                    : Colors.black,
+                                borderRadius: BorderRadius.circular(
+                                  10,
+                                ),
+                                border: Border.all(
+                                  color: Colors.green,
+                                ),
                               ),
-                              border: Border.all(
-                                color: Colors.green,
-                              ),
-                            ),
-                            height: 52,
-                            child: const Center(
-                              child: Text(
-                                'Male',
-                                style: TextStyle(
-                                  color: Colors.white,
+                              height: 52,
+                              child: const Center(
+                                child: Text(
+                                  'Male',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -320,23 +405,32 @@ class _RegistrationState extends State<Registration> {
                           const SizedBox(
                             height: 15,
                           ),
-                          Container(
-                            width: double.maxFinite,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(
-                                10,
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                gender = 'Female';
+                              });
+                            },
+                            child: Container(
+                              width: double.maxFinite,
+                              decoration: BoxDecoration(
+                                color: gender == 'Female'
+                                    ? Colors.green
+                                    : Colors.black,
+                                borderRadius: BorderRadius.circular(
+                                  10,
+                                ),
+                                border: Border.all(
+                                  color: Colors.green,
+                                ),
                               ),
-                              border: Border.all(
-                                color: Colors.green,
-                              ),
-                            ),
-                            height: 52,
-                            child: const Center(
-                              child: Text(
-                                'Female',
-                                style: TextStyle(
-                                  color: Colors.white,
+                              height: 52,
+                              child: const Center(
+                                child: Text(
+                                  'Female',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -344,23 +438,32 @@ class _RegistrationState extends State<Registration> {
                           const SizedBox(
                             height: 15,
                           ),
-                          Container(
-                            width: double.maxFinite,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(
-                                10,
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                gender = 'Other';
+                              });
+                            },
+                            child: Container(
+                              width: double.maxFinite,
+                              decoration: BoxDecoration(
+                                color: gender == 'Other'
+                                    ? Colors.green
+                                    : Colors.black,
+                                borderRadius: BorderRadius.circular(
+                                  10,
+                                ),
+                                border: Border.all(
+                                  color: Colors.green,
+                                ),
                               ),
-                              border: Border.all(
-                                color: Colors.green,
-                              ),
-                            ),
-                            height: 52,
-                            child: const Center(
-                              child: Text(
-                                'Other',
-                                style: TextStyle(
-                                  color: Colors.white,
+                              height: 52,
+                              child: const Center(
+                                child: Text(
+                                  'Other',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -382,7 +485,14 @@ class _RegistrationState extends State<Registration> {
                               fontSize: 30,
                             ),
                           ),
+                          const SizedBox(
+                            height: 10,
+                          ),
                           TextFormField(
+                            initialValue: _locationMessage,
+                            style: const TextStyle(
+                              color: Colors.white,
+                            ),
                             decoration: const InputDecoration(
                               focusedBorder: UnderlineInputBorder(
                                 // Underline border
@@ -414,64 +524,70 @@ class _RegistrationState extends State<Registration> {
                           const SizedBox(
                             height: 20,
                           ),
-                          SizedBox(
-                            height: 350,
-                            width: MediaQuery.of(context).size.width * 0.80,
-                            child: DottedBorder(
-                              color: Colors.green,
-                              borderType: BorderType.RRect,
-                              dashPattern: const [
-                                10,
-                                10,
-                              ],
-                              strokeWidth: 2,
-                              radius: const Radius.circular(
-                                120,
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      height: 30,
-                                      width: 30,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.green,
-                                          width: 2,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          8,
-                                        ),
-                                      ),
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.add,
-                                          color: Colors.green,
-                                        ),
+                          _image != null
+                              ? SizedBox(
+                                  height: 350,
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.80,
+                                  child: DottedBorder(
+                                    color: Colors.green,
+                                    borderType: BorderType.RRect,
+                                    dashPattern: const [
+                                      10,
+                                      10,
+                                    ],
+                                    strokeWidth: 2,
+                                    radius: const Radius.circular(
+                                      120,
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            height: 30,
+                                            width: 30,
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: Colors.green,
+                                                width: 2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                8,
+                                              ),
+                                            ),
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.add,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(
+                                            height: 12,
+                                          ),
+                                          const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 90.0,
+                                            ),
+                                            child: Text(
+                                              'Choose a photo for your profile picture',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    const SizedBox(
-                                      height: 12,
-                                    ),
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 90.0,
-                                      ),
-                                      child: Text(
-                                        'Choose a photo for your profile picture',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                                  ),
+                                )
+                              : Image.file(_image!),
                         ],
                       ),
                     ),
@@ -489,7 +605,7 @@ class _RegistrationState extends State<Registration> {
                       if (_currentIndex < 4) {
                         setState(
                           () {
-                            if (name == null) {
+                            if (_currentIndex == 0 && name == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -498,11 +614,30 @@ class _RegistrationState extends State<Registration> {
                                   duration: Duration(seconds: 4),
                                 ),
                               );
-                            } else if (selectedDate == null) {
+                            } else if (_currentIndex == 1 &&
+                                selectedDate == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
                                     'Please select your birthdate',
+                                  ),
+                                  duration: Duration(seconds: 4),
+                                ),
+                              );
+                            } else if (gender == '' && _currentIndex == 2) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Please select your gender',
+                                  ),
+                                  duration: Duration(seconds: 4),
+                                ),
+                              );
+                            } else if (location == '' && _currentIndex == 3) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Please enter your location',
                                   ),
                                   duration: Duration(seconds: 4),
                                 ),
@@ -515,7 +650,6 @@ class _RegistrationState extends State<Registration> {
                                 curve: Curves.ease,
                               );
                             }
-                            ;
                           },
                         );
                       } else {
